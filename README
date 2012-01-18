@@ -1,0 +1,5 @@
+What is Minim? Minim is a simple syntax for a simple language. It's currently in a very alpha state, barely supporting the print function and string literals, but it is progressing very fast.
+
+It uses the bsn.GoldParser library to parse source files and Reflection.Emit library on the .Net framework to generate executables that run on the CLI.
+
+Written in C#.

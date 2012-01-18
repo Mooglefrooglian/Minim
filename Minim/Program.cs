@@ -78,6 +78,13 @@ namespace Minim
             this.type = type.Name;
             this.name = name.Name;
         }
+
+        public static Type[] ConvertSequence(Sequence<Parameter> pars)
+        {
+            var l = new List<Type>();
+            foreach (Parameter p in pars)
+                l.Add(p.type);
+        }
     }
 
     class Function : Token
