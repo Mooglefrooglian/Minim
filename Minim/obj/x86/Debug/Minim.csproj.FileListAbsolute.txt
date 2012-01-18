@@ -1,0 +1,6 @@
+c:\users\drew\documents\visual studio 2010\Projects\Minim\Minim\bin\Debug\Minim.exe
+c:\users\drew\documents\visual studio 2010\Projects\Minim\Minim\bin\Debug\Minim.pdb
+c:\users\drew\documents\visual studio 2010\Projects\Minim\Minim\bin\Debug\bsn.GoldParser.dll
+c:\users\drew\documents\visual studio 2010\Projects\Minim\Minim\obj\x86\Debug\ResolveAssemblyReference.cache
+c:\users\drew\documents\visual studio 2010\Projects\Minim\Minim\obj\x86\Debug\Minim.exe
+c:\users\drew\documents\visual studio 2010\Projects\Minim\Minim\obj\x86\Debug\Minim.pdb
