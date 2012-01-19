@@ -46,8 +46,16 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CodeGenerator.cs" />
+    <Compile Include="Expression.cs" />
+    <Compile Include="Function.cs" />
+    <Compile Include="Parameter.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Sequence.cs" />
+    <Compile Include="Statement.cs" />
+    <Compile Include="Token.cs" />
+    <Compile Include="TypeChecker.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="minim0.1.cgt" />
