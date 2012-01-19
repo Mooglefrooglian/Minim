@@ -29,17 +29,19 @@ namespace Minim
         private readonly Sequence<T> next;
 
         [Rule(@"<ParameterList> ::=", typeof(Parameter))]
+        [Rule(@"<FunctionList> ::=", typeof(Function))]
         [Rule(@"<StatementList> ::=", typeof(Statement))]
+        [Rule(@"<ArgumentList> ::=", typeof(Expression))]
         public Sequence() : this(null, null) { }
 
         [Rule(@"<ParameterList> ::= <Parameter>", typeof(Parameter))]
-        [Rule(@"<FunctionList> ::= <Function>", typeof(Function))]
-        [Rule(@"<StatementList> ::= <Statement>", typeof(Statement))]
+        [Rule(@"<ArgumentList> ::= <Expression>", typeof(Expression))]
         public Sequence(T item) : this(item, null)  { }
 
         [Rule(@"<ParameterList> ::= <Parameter> ~',' <ParameterList>", typeof(Parameter))]
         [Rule(@"<FunctionList> ::= <Function> <FunctionList>", typeof(Function))]
-        [Rule(@"<StatementList> ::= <Statement> ~<nl> <StatementList>", typeof(Statement))]
+        [Rule(@"<StatementList> ::= <Statement> <StatementList>", typeof(Statement))]
+        [Rule(@"<ArgumentList> ::= <Expression> ~',' <ArgumentList>", typeof(Expression))]
         public Sequence(T item, Sequence<T> next)
         {
             this.item = item;
@@ -75,42 +77,79 @@ namespace Minim
         [Rule(@"<Parameter> ::= Identifier Identifier")]
         public Parameter(Identifier type, Identifier name)
         {
-            this.type = type.Name;
-            this.name = name.Name;
+            this.type = type.Value;
+            this.name = name.Value;
         }
 
-        public static Type[] ConvertSequence(Sequence<Parameter> pars)
+        public static Type[] ConvertSequenceToTypeArray(Sequence<Parameter> pars)
         {
             var l = new List<Type>();
             foreach (Parameter p in pars)
-                l.Add(p.type);
+                l.Add(TypeChecker.ConvertStringToType(p.type));
+            return l.ToArray();
+        }
+    }
+
+    class TypeChecker
+    {
+        private static Dictionary<String, Type> typeHash = new Dictionary<String, Type>();
+
+        public static void Init()
+        {
+            typeHash.Add("void", typeof(void));
+            typeHash.Add("String", typeof(string));
+            typeHash.Add("Int", typeof(Int32));
+        }
+
+        public static Type ConvertStringToType(String type)
+        {
+            return typeHash[type];
         }
     }
 
     class Function : Token
     {
-        private String name;
-        private Sequence<Parameter> pars;
         private Sequence<Statement> stmts;
+        private Emit.MethodBuilder mb;
 
-        [Rule(@"<Function> ::= ~v Identifier ~'(' <ParameterList> ~')' ~<nl> <StatementList> ~';'")]
-        public Function(Identifier name, Sequence<Parameter> pars, Sequence<Statement> stmts)
+        [Rule(@"<Function> ::= Identifier Identifier ~'(' <ParameterList> ~')' ~<nl> <StatementList> ~';' ~<nl opt>")]
+        public Function(Identifier returnType, Identifier name, Sequence<Parameter> pars, Sequence<Statement> stmts)
         {
-            this.name = name.Name;
-            this.pars = pars;
+            mb = CodeGenerator.CreateFunction(name.Value, TypeChecker.ConvertStringToType(returnType.Value), Parameter.ConvertSequenceToTypeArray(pars));
             this.stmts = stmts;
+            if (fns.ContainsKey(name.Value))
+            {
+                throw new Exception("Function redeclared. Note: overloaded functions are not supported at this time.");
+            }
+            fns.Add(name.Value, this);
+        }
+
+        [Rule(@"<Function> ::= Identifier Identifier ~<nl> <StatementList> ~';' ~<nl opt>")]
+        public Function(Identifier returnType, Identifier name, Sequence<Statement> stmts) : this(returnType, name, new Sequence<Parameter>(), stmts)
+        {
+
         }
 
         public void GenerateCode()
         {
-            var emitter = CodeGenerator.CreateFunction(name, pars, "void");
+            var ilg = mb.GetILGenerator();
             foreach (Statement s in stmts)
-                s.GenerateCode(emitter);
+                s.GenerateCode(ilg);
         }
 
-        public String Name
+        private static Dictionary<String, Function> fns = new Dictionary<String, Function>();
+        public static Function Get(String name)
         {
-            get { return name; }
+            if (fns.ContainsKey(name))
+                return fns[name];
+            else
+                return null;
+        }
+
+        public Emit.MethodBuilder MethodBuilder
+        {
+            get { return mb; }
+            set { mb = value; }
         }
     }
 
@@ -123,7 +162,6 @@ namespace Minim
     [Terminal(";")]
     [Terminal(",")]
     [Terminal("NewLine")]
-    [Terminal("v")]
     [Terminal("print")]
     class Token : SemanticToken
     {
@@ -164,11 +202,11 @@ namespace Minim
             this.name = name;
         }
 
-        public String Name { get { return name; } }
+        public String Value { get { return name; } }
 
         public override void Push(Emit.ILGenerator ilg)
         {
-
+            throw new NotImplementedException();
         }
     }
 
@@ -177,10 +215,31 @@ namespace Minim
         public abstract void GenerateCode(Emit.ILGenerator ilg);
     }
 
+    class CallStatement : Statement
+    {
+        private Sequence<Expression> alist;
+        private String funcName;
+        [Rule(@"<Statement> ::= Identifier ~'(' <ArgumentList> ~')' ~<nl>")]
+        public CallStatement(Identifier funcName, Sequence<Expression> alist)
+        {
+            this.funcName = funcName.Value;
+            this.alist = alist;
+        }
+        [Rule(@"<Statement> ::= Identifier ~<nl>")]
+        public CallStatement(Identifier funcName) : this(funcName, new Sequence<Expression>()) { }
+        public override void GenerateCode(Emit.ILGenerator ilg)
+        {
+            foreach (Expression e in alist)
+                e.Push(ilg);
+            
+            ilg.Emit(Emit.OpCodes.Call, Function.Get(funcName).MethodBuilder);
+        }
+    }
+
     class PrintStatement : Statement
     {
         private Expression e;
-        [Rule(@"<Statement> ::= ~print ~'(' <Expression> ~')'")]
+        [Rule(@"<Statement> ::= ~print ~'(' <Expression> ~')' ~<nl>")]
         public PrintStatement(Expression e) { this.e = e; }
         public override void GenerateCode(Emit.ILGenerator ilg) 
         {
@@ -197,8 +256,6 @@ namespace Minim
         private static Emit.ModuleBuilder modb;
         private static Emit.TypeBuilder typeBuilder;
 
-        private static Emit.MethodBuilder mainMethod;
-
         public static void Init(String modName)
         {
             moduleName = modName;
@@ -212,23 +269,21 @@ namespace Minim
             asmb = System.AppDomain.CurrentDomain.DefineDynamicAssembly(name, Emit.AssemblyBuilderAccess.Save);
             modb = asmb.DefineDynamicModule(moduleName);
             typeBuilder = modb.DefineType("Foo"); //Normally, you'd define a class name here
-            
         }
 
-        public static Emit.ILGenerator CreateFunction(String name, Sequence<Parameter> pars, String returnType)
+        public static Emit.MethodBuilder CreateFunction(String name, Type returnType, Type[] ptypes)
         {
-            var func = typeBuilder.DefineMethod(name, Reflect.MethodAttributes.Static, typeof(void), System.Type.EmptyTypes); //ignore parameters and return type for now TODO
-            tempmainglobal = func;
-            return func.GetILGenerator();
+            return typeBuilder.DefineMethod(name, Reflect.MethodAttributes.Static, returnType, ptypes);
         }
-
-        private static Emit.MethodBuilder tempmainglobal;
 
         public static void Complete() //Ends the assembly, saves to disk.
         {
             typeBuilder.CreateType();
             modb.CreateGlobalFunctions();
-            asmb.SetEntryPoint(tempmainglobal);
+            var main = Function.Get("main");
+            if (main == null)
+                throw new Exception("Main class not found.");
+            asmb.SetEntryPoint(main.MethodBuilder);
             asmb.Save(moduleName);
         }
     }
@@ -241,6 +296,7 @@ namespace Minim
             CompiledGrammar grammar = CompiledGrammar.Load(typeof(Token), "minim0.1.cgt");
             SemanticTypeActions<Token> actions = new SemanticTypeActions<Token>(grammar);
             CodeGenerator.Init("test.exe");
+            TypeChecker.Init();
 
             try
             {
@@ -264,6 +320,7 @@ namespace Minim
             else
             {
                 IToken token = processor.CurrentToken;
+                Console.WriteLine("Error on line " + token.Position.Line + ".\n" + token.Position.ToString());
                 Console.WriteLine(string.Format("{0} {1}", "^".PadLeft((int)(token.Position.Index + 1)), parseMessage));
             }
             

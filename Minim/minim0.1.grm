@@ -1,0 +1,69 @@
+"Name"     = 'Minim'
+"Author"   = 'Drew "Mooglefrooglian" Barclay'
+"Version"  = '0.1'
+"About"    = 'Minimalist syntax refining C'
+
+"Start Symbol" = <Program>
+
+! -------------------------------------------------
+! Character Sets
+! -------------------------------------------------
+
+{WS}           = {Whitespace} - {CR} - {LF}
+{String Chars} = {Printable} + {HT} - ["\]
+
+! -------------------------------------------------
+! Terminals
+! -------------------------------------------------
+
+! The following defines the Whitespace terminal using the {WS}
+! set - which excludes the carriage return and line feed 
+! characters
+
+Whitespace    = {WS}+
+NewLine       = {CR}{LF} | {CR} | {LF}
+
+Identifier    = {Letter}{AlphaNumeric}*
+StringLiteral = '"' ( {String Chars} | '\' {Printable} )* '"'
+
+! -------------------------------------------------
+! Rules
+! -------------------------------------------------
+
+! The following rule defines a series of newline tokens.
+! Use this rule rather than the newline terminal.
+
+<nl>     ::= NewLine <nl>          !One or more
+          |  NewLine
+
+<nl opt> ::= NewLine <nl opt>      !Zero or more
+          |  !Empty
+
+! <nl opt> removes blank lines before first statement
+
+<Program> ::= <nl opt> <FunctionList>
+           
+<FunctionList> ::= <Function> <FunctionList>
+                |
+                
+<Function> ::= Identifier Identifier '(' <ParameterList> ')' <nl> <StatementList> ';' <nl opt>
+            | Identifier Identifier <nl> <StatementList> ';' <nl opt> !Function declaration that has no parameters
+            
+<ParameterList> ::= <Parameter> ',' <ParameterList>
+                 | <Parameter>
+                 |
+                 
+<Parameter> ::= Identifier Identifier
+             
+<ArgumentList> ::= Identifier ',' <ArgumentList>
+                | Identifier
+                |
+             
+<StatementList> ::= <Statement> <StatementList>
+                 |
+                 
+<Statement> ::= print '(' <Expression> ')' <nl>
+             | Identifier <nl> !Calling a function without brackets
+             | Identifier '(' <ArgumentList> ')' <nl>
+             
+<Expression> ::= StringLiteral
