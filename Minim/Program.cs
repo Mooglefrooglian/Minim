@@ -28,7 +28,7 @@ namespace Minim
     {
         static void Main(string[] args)
         {
-            CompiledGrammar grammar = CompiledGrammar.Load(typeof(Token), "minim0.1.cgt");
+            CompiledGrammar grammar = CompiledGrammar.Load(typeof(Token), "minim0.2.cgt");
             SemanticTypeActions<Token> actions = new SemanticTypeActions<Token>(grammar);
             CodeGenerator.Init("test.exe");
             TypeChecker.Init();

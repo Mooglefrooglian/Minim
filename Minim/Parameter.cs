@@ -16,21 +16,38 @@ namespace Minim
 {
     public class Parameter : Token
     {
-        private String type;
+        private Type type;
         private String name;
+        private int index; //index in arg array
 
         [Rule(@"<Parameter> ::= Identifier Identifier")]
         public Parameter(Identifier type, Identifier name)
         {
-            this.type = type.Value;
+            this.type = TypeChecker.ConvertStringToType(type.Value);
             this.name = name.Value;
+        }
+
+        public String Name
+        {
+            get { return name; }
+        }
+
+        public Type Type
+        {
+            get { return type; }
+        }
+
+        public int Index
+        {
+            get { return index; }
+            set { index = value; }
         }
 
         public static Type[] ConvertSequenceToTypeArray(Sequence<Parameter> pars)
         {
             var l = new List<Type>();
             foreach (Parameter p in pars)
-                l.Add(TypeChecker.ConvertStringToType(p.type));
+                l.Add(p.type);
             return l.ToArray();
         }
     }

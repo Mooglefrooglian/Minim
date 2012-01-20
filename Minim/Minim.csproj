@@ -47,6 +47,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CodeGenerator.cs" />
+    <Compile Include="ExecutionContext.cs" />
     <Compile Include="Expression.cs" />
     <Compile Include="Function.cs" />
     <Compile Include="Parameter.cs" />
@@ -58,7 +59,7 @@
     <Compile Include="TypeChecker.cs" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="minim0.1.cgt" />
+    <EmbeddedResource Include="minim0.2.cgt" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

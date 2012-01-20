@@ -23,6 +23,7 @@ namespace Minim
     [Terminal(",")]
     [Terminal("NewLine")]
     [Terminal("print")]
+    [Terminal("=")]
     public class Token : SemanticToken
     {
         [Rule(@"<nl> ::= ~NewLine ~<nl>")]

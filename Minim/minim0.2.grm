@@ -1,6 +1,6 @@
 "Name"     = 'Minim'
 "Author"   = 'Drew "Mooglefrooglian" Barclay'
-"Version"  = '0.1'
+"Version"  = '0.2'
 "About"    = 'Minimalist syntax refining C'
 
 "Start Symbol" = <Program>
@@ -65,5 +65,7 @@ StringLiteral = '"' ( {String Chars} | '\' {Printable} )* '"'
 <Statement> ::= print '(' <Expression> ')' <nl>
              | Identifier <nl> !Calling a function without brackets
              | Identifier '(' <ArgumentList> ')' <nl>
+             | Identifier '=' <Expression> <nl> !Assignment
              
 <Expression> ::= StringLiteral
+              | Identifier

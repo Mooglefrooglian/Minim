@@ -18,6 +18,7 @@ namespace Minim
     {
         private Sequence<Statement> stmts;
         private Emit.MethodBuilder mb;
+        private ExecutionContext ec;
 
         [Rule(@"<Function> ::= Identifier Identifier ~'(' <ParameterList> ~')' ~<nl> <StatementList> ~';' ~<nl opt>")]
         public Function(Identifier returnType, Identifier name, Sequence<Parameter> pars, Sequence<Statement> stmts)
@@ -29,6 +30,8 @@ namespace Minim
                 throw new Exception("Function redeclared. Note: overloaded functions are not supported at this time.");
             }
             fns.Add(name.Value, this);
+            ec = new ExecutionContext(null);
+            ec.SetParameters(pars);
         }
 
         [Rule(@"<Function> ::= Identifier Identifier ~<nl> <StatementList> ~';' ~<nl opt>")]
@@ -42,7 +45,7 @@ namespace Minim
         {
             var ilg = mb.GetILGenerator();
             foreach (Statement s in stmts)
-                s.GenerateCode(ilg);
+                s.GenerateCode(ilg, ec);
         }
 
         private static Dictionary<String, Function> fns = new Dictionary<String, Function>();
