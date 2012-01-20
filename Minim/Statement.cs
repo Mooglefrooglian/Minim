@@ -31,12 +31,19 @@ namespace Minim
         }
         [Rule(@"<Statement> ::= Identifier ~<nl>")]
         public CallStatement(Identifier funcName) : this(funcName, new Sequence<Expression>()) { }
+
+
         public override void GenerateCode(Emit.ILGenerator ilg, ExecutionContext ec)
         {
             var f = Function.Get(funcName).MethodBuilder;
+            var fec = Function.Get(funcName).Ec;
             int count = 0;
             foreach (Expression e in alist)
-                if (f.GetParameters()[count++].ParameterType == e.GetEvaluatedType(ec))
+            {
+                if (count >= fec.NumParameters)
+                    throw new Exception("Too many arguments to function.");
+
+                if (fec.GetParameter(count++).Type == e.GetEvaluatedType(ec))
                 {
                     e.Push(ilg, ec);
                 }
@@ -44,7 +51,10 @@ namespace Minim
                 {
                     throw new Exception("Mismatch of argument types.");
                 }
-            
+            }
+
+            if (count < fec.NumParameters)
+                throw new Exception("Too few arguments to function.");
 
             ilg.Emit(Emit.OpCodes.Call, Function.Get(funcName).MethodBuilder);
         }

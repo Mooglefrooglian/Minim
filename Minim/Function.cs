@@ -62,5 +62,11 @@ namespace Minim
             get { return mb; }
             set { mb = value; }
         }
+
+        public ExecutionContext Ec
+        {
+            get { return ec; }
+            set { ec = value; }
+        }
     }
 }

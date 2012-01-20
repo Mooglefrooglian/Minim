@@ -20,6 +20,7 @@ namespace Minim
         ExecutionContext parent = null;
         Dictionary<String, Emit.LocalBuilder> symbolTable = new Dictionary<String, Emit.LocalBuilder>();
         Dictionary<String, Parameter> args;
+        Parameter[] argsByIndex;
 
         public ExecutionContext(ExecutionContext p)
         {
@@ -58,6 +59,16 @@ namespace Minim
                 return null;
         }
 
+        public Parameter GetParameter(int index)
+        {
+            return argsByIndex[index];
+        }
+
+        public int NumParameters
+        {
+            get { return argsByIndex.Length; }
+        }
+
         public void SetParameters(Sequence<Parameter> pars)
         {
             args = new Dictionary<String, Parameter>();
@@ -66,6 +77,13 @@ namespace Minim
             {
                 p.Index = count++;
                 args.Add(p.Name, p);
+            }
+
+            argsByIndex = new Parameter[count];
+            count = 0;
+            foreach (Parameter p in pars)
+            {
+                argsByIndex[count++] = p;
             }
         }
     }
