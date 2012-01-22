@@ -12,6 +12,8 @@ using Reflect = System.Reflection;
 using Emit = System.Reflection.Emit;
 using System.IO;
 
+[assembly: RuleTrim("<Value> ::= '(' <Expression> ')'", "<Expression>", SemanticTokenType = typeof(Minim.Token))] //because <Value> can be just an expression with brackets, no sesne making a new class
+
 namespace Minim
 {
     public abstract class Expression : Token
@@ -44,7 +46,7 @@ namespace Minim
             if (arg != null)
             {
                 //This is an argument - push its index onto the stack!
-                ilg.Emit(Emit.OpCodes.Ldarg, arg.Index);
+                ilg.Emit(Emit.OpCodes.Ldarg, arg.Position);
                 return;
             }
 
@@ -59,9 +61,9 @@ namespace Minim
             var funcDec = Function.Get(name);
             if (funcDec != null)
             {
-                if (funcDec.MethodBuilder.ReturnType != typeof(void))
+                if (funcDec.MethodInfo.ReturnType != typeof(void))
                 {
-                    ilg.Emit(Emit.OpCodes.Call, funcDec.MethodBuilder); //Only functions without parameters can be called currently - changes to the grammar are needed to improve on this and will likely become their own type of expression
+                    ilg.Emit(Emit.OpCodes.Call, funcDec.MethodInfo); //Only functions without parameters can be called currently - changes to the grammar are needed to improve on this and will likely become their own type of expression
                 }
                 else
                 {
@@ -78,7 +80,7 @@ namespace Minim
             var arg = ec.GetParameter(name);
             if (arg != null)
             {
-                return arg.Type;
+                return arg.ParameterType;
             }
 
             var varDec = ec.GetVariable(name);
@@ -90,7 +92,7 @@ namespace Minim
             var funcDec = Function.Get(name);
             if (funcDec != null)
             {
-                return funcDec.MethodBuilder.ReturnType;
+                return funcDec.MethodInfo.ReturnType;
             }
 
             //At this point, we have an unrecognized identifier
@@ -106,7 +108,43 @@ namespace Minim
 
         public StringLiteral(String s)
         {
-            this.s = s.Substring(1, s.Length - 2);
+            //Parse the string - deal with escaped characters.
+            this.s = s.Substring(1, s.Length - 2); //Get rid of beginning and ending quote there because of the terminal definition.
+            s = this.s;
+            StringBuilder escaped = new StringBuilder(s.Length);
+            for (int i = 0; i < s.Length; i++)
+            {
+                if (s[i] == '\\')
+                {
+                    //Escaped character! Deal with it by looking at the next.
+                    i++;
+                    switch(s[i])
+                    {
+                        case 'n':
+                            escaped.Append('\n');
+                            break;
+                        case '\\':
+                            escaped.Append('\\');
+                            break;
+                        case 't':
+                            escaped.Append('\t');
+                            break;
+                        case 'r':
+                            escaped.Append('\r');
+                            break;
+                        case '"':
+                            escaped.Append('"');
+                            break;
+                        default:
+                            throw new Exception("Unknown escape character.");
+                    }
+                }
+                else
+                {
+                    escaped.Append(s[i]);
+                }
+            }
+            this.s = escaped.ToString();
         }
 
         public override void Push(Emit.ILGenerator ilg, ExecutionContext ec)
@@ -117,6 +155,96 @@ namespace Minim
         public override Type GetEvaluatedType(ExecutionContext ec)
         {
             return typeof(string);
+        }
+    }
+
+    public class MathExpression : Expression
+    {
+        Expression left;
+        Expression right;
+
+        [Rule(@"<Expression> ::= <Expression> '+' <Mult Exp>")] 
+        [Rule(@"<Expression> ::= <Expression> '-' <Mult Exp>")]
+        [Rule(@"<Mult Exp> ::= <Mult Exp> '*' <Negate Exp>")]
+        [Rule(@"<Mult Exp> ::= <Mult Exp> '/' <Negate Exp>")]
+        public MathExpression(Expression left, Operator o, Expression right)
+        {
+
+        }
+
+        public override Type GetEvaluatedType(ExecutionContext ec)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override void Push(Emit.ILGenerator ilg, ExecutionContext ec)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    public class NegateExpression : Expression
+    {
+        Expression e;
+
+        [Rule(@"<Negate Exp> ::= ~'-' <Value>")]
+        public NegateExpression(Expression e)
+        {
+            this.e = e;
+        }
+
+        public override void Push(Emit.ILGenerator ilg, ExecutionContext ec)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override Type GetEvaluatedType(ExecutionContext ec)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    public class FunctionCall : Expression
+    {
+        Sequence<Expression> alist;
+        String funcName;
+
+        [Rule(@"<FunctionCall> ::= Identifier ~'(' <ArgumentList> ~')'")]
+        public FunctionCall(Identifier funcName, Sequence<Expression> alist)
+        {
+            this.funcName = funcName.Value;
+            this.alist = alist;
+        }
+
+        public override Type GetEvaluatedType(ExecutionContext ec)
+        {
+            return Function.Get(funcName).MethodInfo.ReturnType;
+        }
+
+        public override void Push(Emit.ILGenerator ilg, ExecutionContext ec)
+        {
+            var f = Function.Get(funcName).MethodInfo;
+            var fec = Function.Get(funcName).Ec;
+            int count = 0;
+            foreach (Expression e in alist)
+            {
+                if (count >= fec.NumParameters)
+                    throw new Exception("Too many arguments to function.");
+
+                if (fec.GetParameter(count++).ParameterType == e.GetEvaluatedType(ec))
+                {
+                    e.Push(ilg, ec);
+                }
+                else
+                {
+                    throw new Exception("Mismatch of argument types - no coercing available currently.");
+                }
+            }
+
+            if (count < fec.NumParameters)
+                throw new Exception("Too few arguments to function.");
+
+            ilg.Emit(Emit.OpCodes.Call, Function.Get(funcName).MethodInfo);
         }
     }
 }

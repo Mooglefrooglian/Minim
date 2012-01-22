@@ -1,6 +1,6 @@
 void testfunc(String a)
-	print("Testing a function call! The next line should read \"Hello world from a function!\"")
-	print(a)
+	Print("Testing a function call! \n\nThe next line should read \"Hello world from a function!\"")
+	Print(a)
 ;
 
 void main
@@ -8,8 +8,8 @@ void main
 	b = a
 	c = b
 	d = "Hello world from a function!"
-	print(c)
-	print("I am a new language but I am going to quickly learn new features.")
-	print("I am a third line!")
+	Print(c)
+	Print("I am a new language but I am going to quickly learn new features.")
+	Print("I am a third line!")
 	testfunc(d)
 ;

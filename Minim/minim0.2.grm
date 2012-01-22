@@ -49,6 +49,8 @@ StringLiteral = '"' ( {String Chars} | '\' {Printable} )* '"'
 <Function> ::= Identifier Identifier '(' <ParameterList> ')' <nl> <StatementList> ';' <nl opt>
             | Identifier Identifier <nl> <StatementList> ';' <nl opt> !Function declaration that has no parameters
             
+<FunctionCall> ::= Identifier '(' <ArgumentList> ')'
+            
 <ParameterList> ::= <Parameter> ',' <ParameterList>
                  | <Parameter>
                  |
@@ -62,10 +64,26 @@ StringLiteral = '"' ( {String Chars} | '\' {Printable} )* '"'
 <StatementList> ::= <Statement> <StatementList>
                  |
                  
-<Statement> ::= print '(' <Expression> ')' <nl>
-             | Identifier <nl> !Calling a function without brackets
-             | Identifier '(' <ArgumentList> ')' <nl>
+<Statement> ::= Identifier <nl> !Calling a function without brackets
+             | <FunctionCall> <nl> !Function call
              | Identifier '=' <Expression> <nl> !Assignment
+             | '^' <nl> !Return statement
+             | '^' <Expression> <nl>
              
-<Expression> ::= StringLiteral
-              | Identifier
+<Expression>  ::= <Expression> '+' <Mult Exp> 
+               |  <Expression> '-' <Mult Exp> 
+               |  <Mult Exp> 
+
+<Mult Exp>    ::= <Mult Exp> '*' <Negate Exp> 
+               |  <Mult Exp> '/' <Negate Exp> 
+               |  <Negate Exp> 
+
+<Negate Exp>  ::= '-' <Value> 
+               |  <Value> 
+
+!Add more values to the rule below - as needed
+
+<Value>       ::= Identifier            
+               |  '(' <Expression> ')'
+               | StringLiteral
+               | <FunctionCall> !function call

@@ -19,8 +19,8 @@ namespace Minim
     {
         ExecutionContext parent = null;
         Dictionary<String, Emit.LocalBuilder> symbolTable = new Dictionary<String, Emit.LocalBuilder>();
-        Dictionary<String, Parameter> args;
-        Parameter[] argsByIndex;
+        Dictionary<String, ParameterInfo> pars;
+        ParameterInfo[] parsByIndex;
 
         public ExecutionContext(ExecutionContext p)
         {
@@ -35,7 +35,7 @@ namespace Minim
             }
             else
             {
-                //Attempt to try one level up
+                //Attempt to find an upper level
                 if (parent != null)
                     return parent.GetVariable(name);
                 else
@@ -46,45 +46,38 @@ namespace Minim
         public void AddVariable(String name, Emit.LocalBuilder variableDec)
         {
             if (symbolTable.ContainsKey(name))
-                throw new Exception("Attempt to redeclare existing var - likely a compiler error, not a user error. Bitch at Moogle, yeah?");
+                throw new Exception("Attempt to redeclare existing var - likely a compiler error, not a user error. Please report this bug.");
 
             symbolTable.Add(name, variableDec);
         }
 
-        public Parameter GetParameter(String name)
+        public ParameterInfo GetParameter(String name)
         {
-            if (args.ContainsKey(name))
-                return args[name];
+            if (pars.ContainsKey(name))
+                return pars[name];
             else
                 return null;
         }
 
-        public Parameter GetParameter(int index)
+        public ParameterInfo GetParameter(int index)
         {
-            return argsByIndex[index];
+            return parsByIndex[index];
         }
 
         public int NumParameters
         {
-            get { return argsByIndex.Length; }
+            get { return parsByIndex.Length; }
         }
 
-        public void SetParameters(Sequence<Parameter> pars)
+        public void SetParameters(ParameterInfo[] pars)
         {
-            args = new Dictionary<String, Parameter>();
-            int count = 0;
-            foreach (Parameter p in pars)
+            this.pars = new Dictionary<String, ParameterInfo>();
+            foreach (ParameterInfo p in pars)
             {
-                p.Index = count++;
-                args.Add(p.Name, p);
+                this.pars.Add(p.Name, p);
             }
 
-            argsByIndex = new Parameter[count];
-            count = 0;
-            foreach (Parameter p in pars)
-            {
-                argsByIndex[count++] = p;
-            }
+            parsByIndex = pars;
         }
     }
 }

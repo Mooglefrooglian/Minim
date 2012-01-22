@@ -18,7 +18,6 @@ namespace Minim
     {
         private Type type;
         private String name;
-        private int index; //index in arg array
 
         [Rule(@"<Parameter> ::= Identifier Identifier")]
         public Parameter(Identifier type, Identifier name)
@@ -35,12 +34,6 @@ namespace Minim
         public Type Type
         {
             get { return type; }
-        }
-
-        public int Index
-        {
-            get { return index; }
-            set { index = value; }
         }
 
         public static Type[] ConvertSequenceToTypeArray(Sequence<Parameter> pars)

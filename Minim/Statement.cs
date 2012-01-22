@@ -21,54 +21,24 @@ namespace Minim
 
     public class CallStatement : Statement
     {
-        private Sequence<Expression> alist;
-        private String funcName;
-        [Rule(@"<Statement> ::= Identifier ~'(' <ArgumentList> ~')' ~<nl>")]
-        public CallStatement(Identifier funcName, Sequence<Expression> alist)
+        private FunctionCall fc;
+
+        [Rule(@"<Statement> ::= <FunctionCall> ~<nl>")]
+        public CallStatement(FunctionCall fc)
         {
-            this.funcName = funcName.Value;
-            this.alist = alist;
+            this.fc = fc;
         }
+
         [Rule(@"<Statement> ::= Identifier ~<nl>")]
-        public CallStatement(Identifier funcName) : this(funcName, new Sequence<Expression>()) { }
-
-
-        public override void GenerateCode(Emit.ILGenerator ilg, ExecutionContext ec)
+        public CallStatement(Identifier funcName) 
         {
-            var f = Function.Get(funcName).MethodBuilder;
-            var fec = Function.Get(funcName).Ec;
-            int count = 0;
-            foreach (Expression e in alist)
-            {
-                if (count >= fec.NumParameters)
-                    throw new Exception("Too many arguments to function.");
-
-                if (fec.GetParameter(count++).Type == e.GetEvaluatedType(ec))
-                {
-                    e.Push(ilg, ec);
-                }
-                else
-                {
-                    throw new Exception("Mismatch of argument types.");
-                }
-            }
-
-            if (count < fec.NumParameters)
-                throw new Exception("Too few arguments to function.");
-
-            ilg.Emit(Emit.OpCodes.Call, Function.Get(funcName).MethodBuilder);
+            this.fc = new FunctionCall(funcName, new Sequence<Expression>());
         }
-    }
 
-    public class PrintStatement : Statement
-    {
-        private Expression e;
-        [Rule(@"<Statement> ::= ~print ~'(' <Expression> ~')' ~<nl>")]
-        public PrintStatement(Expression e) { this.e = e; }
+
         public override void GenerateCode(Emit.ILGenerator ilg, ExecutionContext ec)
         {
-            e.Push(ilg, ec);
-            ilg.Emit(Emit.OpCodes.Call, typeof(Console).GetMethod("WriteLine", new Type[] { typeof(string) }));
+            this.fc.Push(ilg, ec);
         }
     }
 
@@ -95,7 +65,7 @@ namespace Minim
             if (arg != null)
             {
                 //This is an argument - we need to store it in its index.
-                ilg.Emit(Emit.OpCodes.Starg, arg.Index);
+                ilg.Emit(Emit.OpCodes.Starg, arg.Position);
                 return;
             }
 
@@ -109,6 +79,28 @@ namespace Minim
 
             e.Push(ilg, ec);
             ilg.Emit(Emit.OpCodes.Stloc, varDec); //Store the result of the expression.
+        }
+    }
+
+    public class ReturnStatement : Statement
+    {
+        Expression returnExp;
+
+        [Rule(@"<Statement> ::= ~'^' <Expression> ~<nl>")]
+        public ReturnStatement(Expression e)
+        {
+            this.returnExp = e;
+        }
+
+        [Rule(@"<Statement> ::= ~'^' ~<nl>")]
+        public ReturnStatement() : this(null) { }
+
+        public override void GenerateCode(Emit.ILGenerator ilg, ExecutionContext ec)
+        {
+            if (this.returnExp != null)
+                this.returnExp.Push(ilg, ec);
+
+            ilg.Emit(Emit.OpCodes.Ret);
         }
     }
     

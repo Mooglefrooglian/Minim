@@ -50,6 +50,7 @@
     <Compile Include="ExecutionContext.cs" />
     <Compile Include="Expression.cs" />
     <Compile Include="Function.cs" />
+    <Compile Include="Operator.cs" />
     <Compile Include="Parameter.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

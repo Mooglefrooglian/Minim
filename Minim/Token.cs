@@ -22,7 +22,7 @@ namespace Minim
     [Terminal(";")]
     [Terminal(",")]
     [Terminal("NewLine")]
-    [Terminal("print")]
+    [Terminal("^")]
     [Terminal("=")]
     public class Token : SemanticToken
     {

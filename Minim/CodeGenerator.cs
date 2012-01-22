@@ -11,6 +11,8 @@ using bsn.GoldParser.Parser;
 using Reflect = System.Reflection;
 using Emit = System.Reflection.Emit;
 using System.IO;
+using System.Reflection;
+
 namespace Minim
 {
     public class CodeGenerator
@@ -34,11 +36,21 @@ namespace Minim
             asmb = System.AppDomain.CurrentDomain.DefineDynamicAssembly(name, Emit.AssemblyBuilderAccess.Save);
             modb = asmb.DefineDynamicModule(moduleName);
             typeBuilder = modb.DefineType("Foo"); //Normally, you'd define a class name here
+
+            //Define the basic functions supplied by the language - notably, print
+            new Function("Print", typeof(Console).GetMethod("WriteLine", new Type[] {typeof(string)}));
+            new Function("Write", typeof(Console).GetMethod("Write", new Type[] { typeof(string) }));
+            new Function("GetLine", typeof(Console).GetMethod("ReadLine", new Type[] { }));
         }
 
         public static Emit.MethodBuilder CreateFunction(String name, Type returnType, Type[] ptypes)
         {
             return typeBuilder.DefineMethod(name, Reflect.MethodAttributes.Static, returnType, ptypes);
+        }
+
+        public static ParameterInfo[] GetFunctionParameters(String name)
+        {
+            return typeBuilder.GetMethod(name).GetParameters();
         }
 
         public static void Complete() //Ends the assembly, saves to disk.
@@ -48,7 +60,7 @@ namespace Minim
             var main = Function.Get("main");
             if (main == null)
                 throw new Exception("Main class not found.");
-            asmb.SetEntryPoint(main.MethodBuilder);
+            asmb.SetEntryPoint(main.MethodInfo);
             asmb.Save(moduleName);
         }
     }
