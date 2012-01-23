@@ -18,12 +18,19 @@ namespace Minim
     {
         private Type type;
         private String name;
+        private int position;
 
         [Rule(@"<Parameter> ::= Identifier Identifier")]
         public Parameter(Identifier type, Identifier name)
         {
             this.type = TypeChecker.ConvertStringToType(type.Value);
             this.name = name.Value;
+        }
+
+        public Parameter(Type type, String name)
+        {
+            this.type = type;
+            this.name = name;
         }
 
         public String Name
@@ -42,6 +49,12 @@ namespace Minim
             foreach (Parameter p in pars)
                 l.Add(p.type);
             return l.ToArray();
+        }
+
+        public int Position
+        {
+            get { return position; }
+            set { position = value; }
         }
     }
 }

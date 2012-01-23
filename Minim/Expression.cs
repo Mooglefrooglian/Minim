@@ -64,6 +64,7 @@ namespace Minim
                 if (funcDec.MethodInfo.ReturnType != typeof(void))
                 {
                     ilg.Emit(Emit.OpCodes.Call, funcDec.MethodInfo); //Only functions without parameters can be called currently - changes to the grammar are needed to improve on this and will likely become their own type of expression
+                    return;
                 }
                 else
                 {
@@ -80,7 +81,7 @@ namespace Minim
             var arg = ec.GetParameter(name);
             if (arg != null)
             {
-                return arg.ParameterType;
+                return arg.Type;
             }
 
             var varDec = ec.GetVariable(name);
@@ -162,6 +163,7 @@ namespace Minim
     {
         Expression left;
         Expression right;
+        Operator o;
 
         [Rule(@"<Expression> ::= <Expression> '+' <Mult Exp>")] 
         [Rule(@"<Expression> ::= <Expression> '-' <Mult Exp>")]
@@ -169,17 +171,19 @@ namespace Minim
         [Rule(@"<Mult Exp> ::= <Mult Exp> '/' <Negate Exp>")]
         public MathExpression(Expression left, Operator o, Expression right)
         {
-
+            this.left = left;
+            this.o = o;
+            this.right = right;
         }
 
         public override Type GetEvaluatedType(ExecutionContext ec)
         {
-            throw new NotImplementedException();
+            return this.o.GetEvaluatedType(left, right, ec);
         }
 
         public override void Push(Emit.ILGenerator ilg, ExecutionContext ec)
         {
-            throw new NotImplementedException();
+            this.o.Evaluate(left, right, ilg, ec);
         }
     }
 
@@ -226,12 +230,13 @@ namespace Minim
             var f = Function.Get(funcName).MethodInfo;
             var fec = Function.Get(funcName).Ec;
             int count = 0;
+            var pars = fec.GetParameters();
             foreach (Expression e in alist)
             {
                 if (count >= fec.NumParameters)
                     throw new Exception("Too many arguments to function.");
 
-                if (fec.GetParameter(count++).ParameterType == e.GetEvaluatedType(ec))
+                if (pars[count++].Type == e.GetEvaluatedType(ec))
                 {
                     e.Push(ilg, ec);
                 }

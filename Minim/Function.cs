@@ -33,13 +33,13 @@ namespace Minim
                 throw new Exception("Function redeclared. Note: overloaded functions are not supported at this time.");
             }
             fns.Add(name.Value, this);
-            int count = 0; //parameters start at index 1 - 0 is the return. not sure on GetParameters() though - more testing is needed, but i don't think it includes the returntype as there is a separate way to get that
+            int count = 1; //parameters start at index 1 - 0 is the return. not sure on GetParameters() though - more testing is needed, but i don't think it includes the returntype as there is a separate way to get that
             foreach (Parameter p in pars)
             {
-                mb.DefineParameter(count, ParameterAttributes.None, p.Name);
+                mb.DefineParameter(count++, ParameterAttributes.None, p.Name);
             }
             ec = new ExecutionContext(null);
-            ec.SetParameters(CodeGenerator.GetFunctionParameters(mi.Name));
+            ec.SetParameters(pars.ToArray());
         }
 
         [Rule(@"<Function> ::= Identifier Identifier ~<nl> <StatementList> ~';' ~<nl opt>")]
@@ -55,7 +55,11 @@ namespace Minim
             fns.Add(funcName, this);
             this.mi = mi;
             ec = new ExecutionContext(null);
-            ec.SetParameters(mi.GetParameters());
+            var parInfos = mi.GetParameters();
+            Parameter[] pars = new Parameter[parInfos.Length];
+            for (int i = 0; i < pars.Length; i++)
+                pars[i] = new Parameter(parInfos[i].ParameterType, parInfos[i].Name);
+            ec.SetParameters(pars);
         }
 
         public void GenerateCode()

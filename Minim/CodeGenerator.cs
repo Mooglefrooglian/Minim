@@ -48,11 +48,6 @@ namespace Minim
             return typeBuilder.DefineMethod(name, Reflect.MethodAttributes.Static, returnType, ptypes);
         }
 
-        public static ParameterInfo[] GetFunctionParameters(String name)
-        {
-            return typeBuilder.GetMethod(name).GetParameters();
-        }
-
         public static void Complete() //Ends the assembly, saves to disk.
         {
             typeBuilder.CreateType();

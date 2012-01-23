@@ -19,8 +19,8 @@ namespace Minim
     {
         ExecutionContext parent = null;
         Dictionary<String, Emit.LocalBuilder> symbolTable = new Dictionary<String, Emit.LocalBuilder>();
-        Dictionary<String, ParameterInfo> pars;
-        ParameterInfo[] parsByIndex;
+        Dictionary<String, Parameter> pars;
+        Parameter[] parsArr;
 
         public ExecutionContext(ExecutionContext p)
         {
@@ -51,7 +51,7 @@ namespace Minim
             symbolTable.Add(name, variableDec);
         }
 
-        public ParameterInfo GetParameter(String name)
+        public Parameter GetParameter(String name)
         {
             if (pars.ContainsKey(name))
                 return pars[name];
@@ -59,25 +59,26 @@ namespace Minim
                 return null;
         }
 
-        public ParameterInfo GetParameter(int index)
+        public Parameter[] GetParameters()
         {
-            return parsByIndex[index];
+            return parsArr;
         }
 
         public int NumParameters
         {
-            get { return parsByIndex.Length; }
+            get { return parsArr.Length; }
         }
 
-        public void SetParameters(ParameterInfo[] pars)
+        public void SetParameters(Parameter[] pars)
         {
-            this.pars = new Dictionary<String, ParameterInfo>();
-            foreach (ParameterInfo p in pars)
+            this.pars = new Dictionary<String, Parameter>();
+            int count = 0;
+            foreach (Parameter p in pars)
             {
                 this.pars.Add(p.Name, p);
+                p.Position = count++;
             }
-
-            parsByIndex = pars;
+            parsArr = pars;
         }
     }
 }
